@@ -6,6 +6,10 @@
   "scripts": {
     "start": "electron ."
   },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:JYFiaueng/electron-demo.git"
+  },
   "author": "",
   "license": "ISC",
   "devDependencies": {
