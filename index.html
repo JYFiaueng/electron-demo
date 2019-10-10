@@ -1,3 +1,4 @@
+<!-- 窗口，和网页中的 html 文件无本质区别 -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,11 +7,19 @@
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using Node.js <span id="node-version"></span>,
-    Chromium <span id="chrome-version"></span>,
-    and Electron <span id="electron-version"></span>.
+    <div>
+      We are using Node.js <span id="node-version"></span>
+    Chromium <span id="chrome-version"></span>
+    and Electron <span id="electron-version"></span>
+    </div>
 
-    <!-- You can also require other files to run in this process -->
+    <h2>Notification</h2>
+    <input type="button" value="点击通知" id="notification">
+
+    <h2>离屏渲染，在窗口中获取到某个 web 地址的内容</h2>
+    <input type="button" value="点击跳转至 github" id="screenPaint">
+
+    <!-- 还可以在此进程中引入其他文件 -->
     <script src="./renderer.js"></script>
   </body>
 </html>

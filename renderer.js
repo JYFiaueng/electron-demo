@@ -1,3 +1,2 @@
-// This file is required by the index.html file and will
-// be executed in the renderer process for that window.
-// All of the Node.js APIs are available in this process.
+// js文件，与网页中的 js 文件所处的环境完全相同
+console.log('renderer')
