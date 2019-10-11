@@ -1,6 +1,7 @@
 // 此模块控制应用的声明周期并创建原生的浏览窗口
 const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences} = require('electron')
 const path = require('path')
+const os = require('os')
 
 // 持久化一个全局的 window 对象的引用，如果不这样，在 JavaScript 进行垃圾回收时 window 将会自动关闭
 let mainWindow
@@ -60,13 +61,18 @@ function showMain () {
     click: () => { console.log('time to print stuff') }
   }))
   // 全局快捷键
-  globalShortcut.register('CommandOrControl+X', () => {
-    console.log('CommandOrControl+X is pressed')
+  globalShortcut.register('CommandOrControl+Y', () => {
+    console.log('CommandOrControl+Y is pressed')
   })
 
   // 在 macOS，一个窗口可以设置它展示的文件，文件的图标可以出现在标题栏，当用户 Command-Click 或者 Control-Click 标题栏，文件路径弹窗将会出现
   mainWindow.setRepresentedFilename('/etc/passwd')
   mainWindow.setDocumentEdited(true)
+
+  // 加载 Chrome 扩展程序
+  // BrowserWindow.addDevToolsExtension(
+  //   path.join(os.homedir(), '/Library/Application Support/Google/Chrome Canary/Default/Extensions/pkgccpejnmalmdinmhkkfafefagiiiad/2019.8.1217_0')
+  // )
 
   // 打开开发者工具
   mainWindow.webContents.openDevTools()
