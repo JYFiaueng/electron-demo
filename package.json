@@ -5,15 +5,54 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "gen": "rm -rf /Applications/Electron.app/Contents/Resources/app/* && cp *.* /Applications/Electron.app/Contents/Resources/app"
+    "gen": "rm -rf /Applications/Electron.app/Contents/Resources/app/* && cp *.* /Applications/Electron.app/Contents/Resources/app",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
   },
   "repository": {
     "type": "git",
     "url": "git@github.com:JYFiaueng/electron-demo.git"
   },
+  "config": {
+    "forge": {
+      "packagerConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "my_app"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  },
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.0"
+  },
   "devDependencies": {
+    "@electron-forge/cli": "^6.0.0-beta.45",
+    "@electron-forge/maker-deb": "^6.0.0-beta.45",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.45",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.45",
+    "@electron-forge/maker-zip": "^6.0.0-beta.45",
     "electron": "^6.0.12"
   }
 }
