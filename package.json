@@ -4,7 +4,8 @@
   "description": "study electron",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "gen": "rm -rf /Applications/Electron.app/Contents/Resources/app/* && cp *.* /Applications/Electron.app/Contents/Resources/app"
   },
   "repository": {
     "type": "git",
@@ -14,8 +15,5 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^6.0.12"
-  },
-  "dependencies": {
-    "electron-builder": "^21.2.0"
   }
 }
