@@ -59,4 +59,6 @@ window.addEventListener('load', () => {
   window.addEventListener('offline',  updateOnlineStatus)
   updateOnlineStatus()
 
+  console.log('page process.isMainFram: ', process.isMainFram)
+
 })

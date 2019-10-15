@@ -1,7 +1,16 @@
 // 此模块控制应用的声明周期并创建原生的浏览窗口
-const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences} = require('electron')
+const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences, session} = require('electron')
 const path = require('path')
 const os = require('os')
+
+// app.commandLine.appendSwitch('remote-debugging-port', '8315')
+// app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
+
+// 指定代理服务器地址
+// app.commandLine.appendSwitch('proxy-server', 'g.kuomu.xyz:1443')
+// 指示 Electron 绕过给定的分号分隔的代理服务器主机列表
+// app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
+app.commandLine.appendSwitch('proxy-pac-url', 'https://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac')
 
 // 持久化一个全局的 window 对象的引用，如果不这样，在 JavaScript 进行垃圾回收时 window 将会自动关闭
 let mainWindow
@@ -16,6 +25,18 @@ function showMain () {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+
+  // session.defaultSession.allowNTLMCredentialsForDomains('*')
+  // mainWindow.webContents.session.setProxy({
+    // pacScript:'https://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac',
+    // pacScript:'file://' + __dirname + '/pac.js',
+    // proxyRules: 'socks5://g.kuomu.xyz:1443',
+    // proxyRules: 'socks5://y.kuomu.xyz:1443',
+    // proxyRules: 'socks5://b.kuomu.xyz:1443',
+    // proxyRules: 'socks5://ini.kuomu.xyz:1443',
+  // }, () => {
+    // mainWindow.loadURL('file://' + __dirname + '/index.html')
+  // })
 
   // 加载 index.html 文件
   mainWindow.loadFile('index.html')
@@ -73,6 +94,13 @@ function showMain () {
   // BrowserWindow.addDevToolsExtension(
   //   path.join(os.homedir(), '/Library/Application Support/Google/Chrome Canary/Default/Extensions/pkgccpejnmalmdinmhkkfafefagiiiad/2019.8.1217_0')
   // )
+
+  // 是否为 mian 窗口
+  console.log('main process.isMainFram: ', process.isMainFram)
+  console.log(process.versions)
+  console.log(process.getCreationTime())
+  console.log(process.getSystemMemoryInfo())
+  console.log(process.getSystemVersion())
 
   // 打开开发者工具
   mainWindow.webContents.openDevTools()
