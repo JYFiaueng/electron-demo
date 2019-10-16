@@ -3,37 +3,32 @@ const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPrefer
 const path = require('path')
 const os = require('os')
 
-// app.commandLine.appendSwitch('remote-debugging-port', '8315')
-// app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
-
-// 指定代理服务器地址
-// app.commandLine.appendSwitch('proxy-server', 'g.kuomu.xyz:1443')
-// 指示 Electron 绕过给定的分号分隔的代理服务器主机列表
-// app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
-app.commandLine.appendSwitch('proxy-pac-url', 'https://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac')
+// 使用启动命令行方式翻墙
+app.commandLine.appendSwitch('proxy-pac-url', 'http://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac')
 
 // 持久化一个全局的 window 对象的引用，如果不这样，在 JavaScript 进行垃圾回收时 window 将会自动关闭
 let mainWindow
 
+process.env.GOOGLE_API_KEY = 'AIzaSyDWD4D7lOTUHZw7qeDZPMfA2G623kI6gmg'
+process.env.GOOGLE_DEFAULT_CLIENT_SECRET = 'izwpPuDKWzJ4oomRde12348U'
+process.env.GOOGLE_DEFAULT_CLIENT_ID = '917691297121-vvnmlea2pgptol17mqctcedjv61pqhuk.apps.googleusercontent.com'
+
 function showMain () {
+
   // 创建一个浏览窗口
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      // offscreen: true,
       preload: path.join(__dirname, 'preload.js')
     }
   })
 
-  // session.defaultSession.allowNTLMCredentialsForDomains('*')
+  // 设置 session 代理翻墙
   // mainWindow.webContents.session.setProxy({
-    // pacScript:'https://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac',
     // pacScript:'file://' + __dirname + '/pac.js',
     // proxyRules: 'socks5://g.kuomu.xyz:1443',
-    // proxyRules: 'socks5://y.kuomu.xyz:1443',
     // proxyRules: 'socks5://b.kuomu.xyz:1443',
-    // proxyRules: 'socks5://ini.kuomu.xyz:1443',
   // }, () => {
     // mainWindow.loadURL('file://' + __dirname + '/index.html')
   // })
@@ -91,9 +86,7 @@ function showMain () {
   mainWindow.setDocumentEdited(true)
 
   // 加载 Chrome 扩展程序
-  // BrowserWindow.addDevToolsExtension(
-  //   path.join(os.homedir(), '/Library/Application Support/Google/Chrome Canary/Default/Extensions/pkgccpejnmalmdinmhkkfafefagiiiad/2019.8.1217_0')
-  // )
+  // BrowserWindow.addDevToolsExtension('/Users/mac/Library/Application Support/Google/Chrome/Profile 1/Extensions/cgncbhnhlkbdieckbbmeppcefokppagh/1.18.11.13_0')
 
   // 是否为 mian 窗口
   console.log('main process.isMainFram: ', process.isMainFram)

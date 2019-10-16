@@ -6,9 +6,23 @@
 // 也就是说界面直接展示的是经过此 js 文件渲染后的界面，然后界面中再去按照 web 的形式加载 js、css 资源文件
 
 const fs = require('fs')
-const { ipcRenderer } = require('electron')
+const {
+  ipcRenderer
+} = require('electron')
+
+var Speech = require('electron-speech')
 
 window.addEventListener('DOMContentLoaded', async () => {
+
+  console.log(process.env.GOOGLE_API_KEY)
+  var recog = Speech({
+    lang: 'en-US',
+    continuous: true
+  })
+  recog.on('text', function (text) {
+    console.log(text)
+  });
+  recog.listen()
 
   // 使用 Node.js 模块
   const readme = await new Promise((resolve, reject) => {
@@ -46,7 +60,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   screenPaint.addEventListener('click', () => {
     ipcRenderer.send('screen-paint')
   })
-  
+
 })
 
 window.addEventListener('load', () => {
@@ -55,8 +69,8 @@ window.addEventListener('load', () => {
   const updateOnlineStatus = () => {
     ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline')
   }
-  window.addEventListener('online',  updateOnlineStatus)
-  window.addEventListener('offline',  updateOnlineStatus)
+  window.addEventListener('online', updateOnlineStatus)
+  window.addEventListener('offline', updateOnlineStatus)
   updateOnlineStatus()
 
   console.log('page process.isMainFram: ', process.isMainFram)

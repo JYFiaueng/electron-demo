@@ -45,6 +45,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "electron-chrome-extension": "^4.0.3",
+    "electron-speech": "^1.0.7",
     "electron-squirrel-startup": "^1.0.0"
   },
   "devDependencies": {

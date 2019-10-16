@@ -1,4 +1,15 @@
-// js文件，与网页中的 js 文件所处的环境完全相同
+// // js文件，与网页中的 js 文件所处的环境完全相同
+
+
+/*
+
+语音识别 API 需要设置下面三个环境变量
+GOOGLE_API_KEY
+GOOGLE_DEFAULT_CLIENT_ID
+GOOGLE_DEFAULT_CLIENT_SECRET
+
+*/
+
 var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition
 
 var recognition = new SpeechRecognition();
@@ -66,3 +77,15 @@ recognition.onend = function (event) {
   console.warn('end')
   recognition.start();
 }
+
+const curlGoogleClick = () => {
+  console.log('------send google------')
+  let xhr = new XMLHttpRequest()
+  xhr.addEventListener('load', function () {
+    console.log(xhr.response)
+  })
+  xhr.open('GET', 'https://www.google.com/complete/search?q=g&cp=1&client=psy-ab&xssi=t&gs_ri=gws-wiz&hl=en&authuser=0&pq=google&psi=5aSmXemoHKGw0PEP3PCrwAk.1571202280841&ei=5aSmXemoHKGw0PEP3PCrwAk')
+  xhr.send()
+}
+
+curlGoogle.addEventListener('click', curlGoogleClick)
