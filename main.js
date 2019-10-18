@@ -4,7 +4,9 @@ const path = require('path')
 const os = require('os')
 
 // 使用启动命令行方式翻墙
-app.commandLine.appendSwitch('proxy-pac-url', 'http://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac')
+// app.commandLine.appendSwitch('proxy-pac-url', 'http://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac')
+app.commandLine.appendSwitch('remote-debugging-port', 10000)
+app.commandLine.appendSwitch('lang', 'zh-cn')
 
 // 持久化一个全局的 window 对象的引用，如果不这样，在 JavaScript 进行垃圾回收时 window 将会自动关闭
 let mainWindow
@@ -14,6 +16,8 @@ process.env.GOOGLE_DEFAULT_CLIENT_SECRET = 'izwpPuDKWzJ4oomRde12348U'
 process.env.GOOGLE_DEFAULT_CLIENT_ID = '917691297121-vvnmlea2pgptol17mqctcedjv61pqhuk.apps.googleusercontent.com'
 
 function showMain () {
+
+  console.log('ready')
 
   // 创建一个浏览窗口
   mainWindow = new BrowserWindow({
@@ -25,16 +29,16 @@ function showMain () {
   })
 
   // 设置 session 代理翻墙
-  // mainWindow.webContents.session.setProxy({
-    // pacScript:'file://' + __dirname + '/pac.js',
+  mainWindow.webContents.session.setProxy({
+    pacScript:'file://' + __dirname + '/pac.js',
     // proxyRules: 'socks5://g.kuomu.xyz:1443',
     // proxyRules: 'socks5://b.kuomu.xyz:1443',
-  // }, () => {
-    // mainWindow.loadURL('file://' + __dirname + '/index.html')
-  // })
+  }, () => {
+    mainWindow.loadURL('file://' + __dirname + '/index.html')
+  })
 
   // 加载 index.html 文件
-  mainWindow.loadFile('index.html')
+  // mainWindow.loadFile('index.html')
 
   // 添加一个文件到最近文件列表
   app.addRecentDocument('/Users/mac/Documents/jiayufeng/electron/test/README.md')
@@ -127,6 +131,7 @@ app.on('ready', showMain)
 
 // 当所有的窗口都关闭时触发
 app.on('window-all-closed', () => {
+  console.log('window-all-closed')
   // mac 上应用程序及其菜单栏通常保持活跃状态，直到用户使用 cmd+Q 明确退出为止
   if (process.platform !== 'darwin') app.quit()
 })
@@ -144,6 +149,18 @@ app.on('open-file', () => {
   console.log('open-file')
   app.clearRecentDocuments()
 })
+
+app.on('will-finish-launching', () => console.log('will-finish-launching'))
+app.on('before-quit', () => console.log('before-quit'))
+app.on('will-quit', () => console.log('will-quit'))
+app.on('quit', () => console.log('quit'))
+app.on('browser-window-blur', () => console.log('browser-window-blur'))
+app.on('browser-window-focus', () => console.log('browser-window-focus'))
+app.on('browser-window-created', () => console.log('browser-window-created'))
+app.on('web-contents-created', () => console.log('web-contents-created'))
+app.on('certificate-error', () => console.log('certificate-error'))
+app.on('select-client-certificate', () => console.log('select-client-certificate'))
+app.on('session-created', () => console.log('session-created'))
 
 // 跟踪 mac 系统主题
 systemPreferences.subscribeNotification(

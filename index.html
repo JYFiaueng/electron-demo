@@ -22,12 +22,13 @@
     <h2>curl google</h2>
     <input type="button" value="send google" id="curlGoogle">
 
-    <h2>代理服务器</h2>
-    <div id="pList"></div>
-    <div>
-      <span id="current"></span>
-      <span id="dots"></span>
-    </div>
+    <h2>File API</h2>
+    <p>Drag your file here</p>
+    <p>DOM 文件接口为原生文件提供了抽象, 以便让用户使用 HTML5 文件 API 直接处理原生文件。 Electron已经向 文件 接口添加了一个 path 属性, 在文件系统上暴露出文件的真实路径</p>
+
+    <h2>window.open</h2>
+    <input type="button" value="createWindow" id="createWindow">
+    <p>创建一个功能被限制的 BrowserWindow</p>
 
     <!-- 还可以在此进程中引入其他文件 -->
     <script src="./renderer.js"></script>

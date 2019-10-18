@@ -14,7 +14,7 @@ var Speech = require('electron-speech')
 
 window.addEventListener('DOMContentLoaded', async () => {
 
-  console.log(process.env.GOOGLE_API_KEY)
+  // google speech to text
   var recog = Speech({
     lang: 'en-US',
     continuous: true
