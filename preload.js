@@ -6,23 +6,16 @@
 // 也就是说界面直接展示的是经过此 js 文件渲染后的界面，然后界面中再去按照 web 的形式加载 js、css 资源文件
 
 const fs = require('fs')
+const CryptoJS = require('crypto-js')
+const WebSocket = require('ws')
+const log = require('log4node')
+const toBuffer = require('blob-to-buffer')
+const prism = require('prism-media')
 const {
   ipcRenderer
 } = require('electron')
 
-var Speech = require('electron-speech')
-
 window.addEventListener('DOMContentLoaded', async () => {
-
-  // google speech to text
-  var recog = Speech({
-    lang: 'en-US',
-    continuous: true
-  })
-  recog.on('text', function (text) {
-    console.log(text)
-  });
-  recog.listen()
 
   // 使用 Node.js 模块
   const readme = await new Promise((resolve, reject) => {
@@ -61,6 +54,72 @@ window.addEventListener('DOMContentLoaded', async () => {
     ipcRenderer.send('screen-paint')
   })
 
+  const startAudio = document.getElementById('startAudio')
+  const stopAudio = document.getElementById('stopAudio')
+
+  navigator.mediaDevices.getUserMedia({
+      audio: true
+    })
+    .then((stream) => {
+      var mediaRecorder = new MediaRecorder(stream, {
+        audioBitsPerSecond: 16000
+      })
+      let t = null
+      startAudio.addEventListener('click', () => {
+        mediaRecorder.start()
+        // t = setInterval(() => {
+        //   mediaRecorder.stop()
+        //   mediaRecorder.start()
+        // }, 500)
+      })
+      stopAudio.addEventListener('click', () => {
+        // clearInterval(t)
+        mediaRecorder.stop()
+      })
+      const ws = xunfei()
+      mediaRecorder.ondataavailable = function (e) {
+
+        toBuffer(e.data, function (err, buffer) {
+          fs.writeFile('./t.ogg', buffer, () => {
+            fs.createReadStream('./t.ogg')
+              .pipe(new prism.opus.OggDemuxer())
+              .pipe(new prism.opus.Decoder({
+                rate: 16000,
+                channels: 2,
+                frameSize: 960
+              }))
+              .pipe(fs.createWriteStream('./audio.pcm'))
+            let stream = fs.createReadStream('./audio.pcm', {
+              highWaterMark: 16
+            })
+            stream.on('data', function (chunk) {
+              ws.send(chunk)
+            })
+            stream.on('end', function () {
+              ws.send("{\"end\": true}")
+            })
+          })
+        })
+
+        // toBuffer(e.data, function (err, buffer) {
+        //   let stream = fs.createReadStream(buffer)
+        //     .pipe(new prism.opus.OggDemuxer())
+        //     .pipe(new prism.opus.Decoder({
+        //       rate: 16000,
+        //       channels: 2,
+        //       frameSize: 960
+        //     }))
+        //   stream.on('data', function (chunk) {
+        //     ws.send(chunk)
+        //   })
+        //   stream.on('end', function () {
+        //     ws.send("{\"end\": true}")
+        //   })
+        // })
+
+      }
+    })
+
 })
 
 window.addEventListener('load', () => {
@@ -76,3 +135,87 @@ window.addEventListener('load', () => {
   console.log('page process.isMainFram: ', process.isMainFram)
 
 })
+
+function xunfei() {
+  // 系统配置
+  const config = {
+    // 请求地址
+    hostUrl: "wss://rtasr.xfyun.cn/v1/ws",
+    //在控制台-我的应用-实时语音转写获取
+    appid: "5dad1c13",
+    //在控制台-我的应用-实时语音转写获取
+    apiKey: "b23add4993b85f9bc8012863f04d0600"
+  }
+
+  // 获取当前时间戳
+  let ts = parseInt(new Date().getTime() / 1000)
+
+  let wssUrl = config.hostUrl + "?appid=" + config.appid + "&ts=" + ts + "&signa=" + getSigna(ts)
+  let ws = new WebSocket(wssUrl)
+
+  // 连接建立完毕，读取数据进行识别
+  ws.on('open', (event) => {
+    log.info("websocket connect!")
+  })
+
+  // 得到识别结果后进行处理，仅供参考，具体业务具体对待
+  let rtasrResult = []
+  ws.on('message', (data, err) => {
+    if (err) {
+      log.info(`err:${err}`)
+      return
+    }
+    let res = JSON.parse(data)
+    switch (res.action) {
+      case 'error':
+        log.info(`error code:${res.code} desc:${res.desc}`)
+        break
+        // 连接建立
+      case 'started':
+        log.info('started!')
+        log.info('sid is:' + res.sid)
+        break
+      case 'result':
+        // ... do something
+        let data = JSON.parse(res.data)
+        rtasrResult[data.seg_id] = data
+        // 把转写结果解析为句子
+        if (data.cn.st.type == 0) {
+          rtasrResult.forEach(i => {
+            let str = "实时转写"
+            str += (i.cn.st.type == 0) ? "【最终】识别结果：" : "【中间】识别结果："
+            i.cn.st.rt.forEach(j => {
+              j.ws.forEach(k => {
+                k.cw.forEach(l => {
+                  str += l.w
+                })
+              })
+            })
+            log.info(str)
+          })
+
+        }
+        break
+    }
+  })
+
+  // 资源释放
+  ws.on('close', () => {
+    log.info('connect close!')
+  })
+
+  // 建连错误
+  ws.on('error', (err) => {
+    log.error("websocket connect err: " + err)
+  })
+
+  // 鉴权签名
+  function getSigna(ts) {
+    let md5 = CryptoJS.MD5(config.appid + ts).toString()
+    let sha1 = CryptoJS.HmacSHA1(md5, config.apiKey)
+    let base64 = CryptoJS.enc.Base64.stringify(sha1)
+    return encodeURIComponent(base64)
+  }
+
+  return ws
+}
