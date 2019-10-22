@@ -69,7 +69,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       video: false
     })
     .then((stream) => {
-      let sendData = null
+      let sendData = xunfei60()
       const ddd = []
 
       const context = new AudioContext()
@@ -87,7 +87,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
       let t = 0
       startAudio.addEventListener('click', () => {
-        sendData = xunfei60()
         sendData('', 0)
         t = setInterval(() => {
           let e = ddd.splice(0, 1280)
