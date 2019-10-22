@@ -73,15 +73,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       })
       mediaRecorder.ondataavailable = function (e) {
 
-        // ogg 转 pcm
-        // ffmpeg -i t.ogg -f s16be -ar 16000 -ac 1 -acodec pcm_s16be test_3.pcm
+        // mp3 转 pcm
+        // ffmpeg -i t.mp3 -f s16le -ar 16000 -ac 1 -acodec pcm_s16le test_3.pcm
 
         // pcm 转 mp3
-        // ffmpeg -y -f s16be -ac 2 -ar 16000 -acodec pcm_s16le -i test_1.pcm t.mp3
+        // ffmpeg -y -f s16le -ac 2 -ar 16000 -acodec pcm_s16le -i test_1.pcm t.mp3
 
         toBuffer(e.data, function (err, buffer) {
           fs.writeFile('./t.ogg', buffer, () => {
-            let stream = fs.createReadStream('./test_2.pcm', {
+            let stream = fs.createReadStream('./test_3.pcm', {
               highWaterMark: 16
             })
             stream.on('data', function (chunk) {
