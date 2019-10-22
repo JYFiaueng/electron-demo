@@ -56,19 +56,53 @@ window.addEventListener('DOMContentLoaded', async () => {
   const startAudio = document.getElementById('startAudio')
   const stopAudio = document.getElementById('stopAudio')
 
+  function a(t) {
+    if (Array.isArray(t)) {
+      for (var e = 0, n = Array(t.length); e < t.length; e++) n[e] = t[e];
+      return n
+    }
+    return Array.from(t)
+  }
+
   navigator.mediaDevices.getUserMedia({
-      audio: true
+      audio: true,
+      video: false
     })
     .then((stream) => {
-      const context = new window.AudioContext()
+      let sendData = null
+      const ddd = []
+
+      const context = new AudioContext()
       // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
       const recorder = context.createScriptProcessor(0, 1, 1)
-      // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)(可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
+      // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)
+      // (可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
       const ms = context.createMediaStreamSource(stream)
-      recorder.onaudioprocess(e => {
-        sendData(e.inputBuffer.getChannelData(0), ms)
-      })
+      recorder.onaudioprocess = e => {
+        let d = e.inputBuffer.getChannelData(0)
+        ddd.push(...d)
+      }
+      ms.connect(recorder)
+      recorder.connect(context.destination)
 
+      let t = 0
+      startAudio.addEventListener('click', () => {
+        sendData = xunfei60()
+        sendData('', 0)
+        t = setInterval(() => {
+          let e = ddd.splice(0, 1280)
+          if (ddd.length === 0) {
+            clearInterval(t)
+            sendData('', 2)
+            return
+          }
+          sendData(e)
+        }, 40)
+      })
+      stopAudio.addEventListener('click', () => {
+        clearInterval(t)
+        sendData('', 2)
+      })
     })
 
 })
@@ -211,17 +245,17 @@ function xunfei60(filePath) {
   // 连接建立完毕，读取数据进行识别
   ws.on('open', (event) => {
     console.log("websocket connect!")
-    var readerStream = fs.createReadStream(config.file, {
-      highWaterMark: config.highWaterMark
-    });
-    readerStream.on('data', function (chunk) {
-      send(chunk)
-    });
-    // 最终帧发送结束
-    readerStream.on('end', function () {
-      status = FRAME.STATUS_LAST_FRAME
-      send("")
-    });
+    // var readerStream = fs.createReadStream(config.file, {
+    //   highWaterMark: config.highWaterMark
+    // });
+    // readerStream.on('data', function (chunk) {
+    //   send(chunk)
+    // });
+    // // 最终帧发送结束
+    // readerStream.on('end', function () {
+    //   status = FRAME.STATUS_LAST_FRAME
+    //   send("")
+    // });
   })
 
   // 得到识别结果后进行处理，仅供参考，具体业务具体对待
@@ -289,14 +323,14 @@ function xunfei60(filePath) {
 
   // 传输数据
   function send(data, outStatus) {
-    if (outStatus) {
+    if (outStatus !== undefined) {
       status = outStatus
     }
     let frame = "";
     let frameDataSection = {
       "status": status,
       "format": "audio/L16;rate=16000",
-      "audio": data.toString('base64'),
+      "audio": ArrayBufferToBase64(data),
       "encoding": "raw"
     }
     switch (status) {
@@ -311,7 +345,9 @@ function xunfei60(filePath) {
             language: "zh_cn",
             domain: "iat",
             accent: "mandarin",
-            dwa: "wpgs" // 可选参数，动态修正
+            dwa: "wpgs", // 可选参数，动态修正
+            sample_rate: "16000",
+            vad_eos: 5000
           },
           //填充data
           data: frameDataSection
@@ -326,6 +362,21 @@ function xunfei60(filePath) {
         }
         break;
     }
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
+    console.log(frame)
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
     ws.send(JSON.stringify(frame))
   }
+
+  return send
+}
+
+function ArrayBufferToBase64(buffer) {
+  var binary = '';
+  var bytes = new Uint8Array(buffer);
+  var len = bytes.byteLength;
+  for (var i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
 }
