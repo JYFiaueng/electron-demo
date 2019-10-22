@@ -10,7 +10,6 @@ const CryptoJS = require('crypto-js')
 const WebSocket = require('ws')
 const log = require('log4node')
 const toBuffer = require('blob-to-buffer')
-const prism = require('prism-media')
 const {
   ipcRenderer
 } = require('electron')
@@ -64,32 +63,25 @@ window.addEventListener('DOMContentLoaded', async () => {
       var mediaRecorder = new MediaRecorder(stream, {
         audioBitsPerSecond: 16000
       })
-      let t = null
+      let ws = null
       startAudio.addEventListener('click', () => {
         mediaRecorder.start()
-        // t = setInterval(() => {
-        //   mediaRecorder.stop()
-        //   mediaRecorder.start()
-        // }, 500)
+        ws = xunfei()
       })
       stopAudio.addEventListener('click', () => {
-        // clearInterval(t)
         mediaRecorder.stop()
       })
-      const ws = xunfei()
       mediaRecorder.ondataavailable = function (e) {
+
+        // ogg 转 pcm
+        // ffmpeg -i t.ogg -f s16be -ar 16000 -ac 1 -acodec pcm_s16be test_3.pcm
+
+        // pcm 转 mp3
+        // ffmpeg -y -f s16be -ac 2 -ar 16000 -acodec pcm_s16le -i test_1.pcm t.mp3
 
         toBuffer(e.data, function (err, buffer) {
           fs.writeFile('./t.ogg', buffer, () => {
-            fs.createReadStream('./t.ogg')
-              .pipe(new prism.opus.OggDemuxer())
-              .pipe(new prism.opus.Decoder({
-                rate: 16000,
-                channels: 2,
-                frameSize: 960
-              }))
-              .pipe(fs.createWriteStream('./audio.pcm'))
-            let stream = fs.createReadStream('./audio.pcm', {
+            let stream = fs.createReadStream('./test_2.pcm', {
               highWaterMark: 16
             })
             stream.on('data', function (chunk) {
@@ -100,22 +92,6 @@ window.addEventListener('DOMContentLoaded', async () => {
             })
           })
         })
-
-        // toBuffer(e.data, function (err, buffer) {
-        //   let stream = fs.createReadStream(buffer)
-        //     .pipe(new prism.opus.OggDemuxer())
-        //     .pipe(new prism.opus.Decoder({
-        //       rate: 16000,
-        //       channels: 2,
-        //       frameSize: 960
-        //     }))
-        //   stream.on('data', function (chunk) {
-        //     ws.send(chunk)
-        //   })
-        //   stream.on('end', function () {
-        //     ws.send("{\"end\": true}")
-        //   })
-        // })
 
       }
     })
