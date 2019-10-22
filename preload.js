@@ -60,40 +60,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       audio: true
     })
     .then((stream) => {
-      var mediaRecorder = new MediaRecorder(stream, {
-        audioBitsPerSecond: 16000
+      const context = new window.AudioContext()
+      // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
+      const recorder = context.createScriptProcessor(0, 1, 1)
+      // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)(可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
+      const ms = context.createMediaStreamSource(stream)
+      recorder.onaudioprocess(e => {
+        sendData(e.inputBuffer.getChannelData(0), ms)
       })
-      let ws = null
-      startAudio.addEventListener('click', () => {
-        mediaRecorder.start()
-        ws = xunfei()
-      })
-      stopAudio.addEventListener('click', () => {
-        mediaRecorder.stop()
-      })
-      mediaRecorder.ondataavailable = function (e) {
 
-        // mp3 转 pcm
-        // ffmpeg -i t.mp3 -f s16le -ar 16000 -ac 1 -acodec pcm_s16le test_3.pcm
-
-        // pcm 转 mp3
-        // ffmpeg -y -f s16le -ac 2 -ar 16000 -acodec pcm_s16le -i test_1.pcm t.mp3
-
-        toBuffer(e.data, function (err, buffer) {
-          fs.writeFile('./t.ogg', buffer, () => {
-            let stream = fs.createReadStream('./test_3.pcm', {
-              highWaterMark: 16
-            })
-            stream.on('data', function (chunk) {
-              ws.send(chunk)
-            })
-            stream.on('end', function () {
-              ws.send("{\"end\": true}")
-            })
-          })
-        })
-
-      }
     })
 
 })
@@ -196,7 +171,7 @@ function xunfei() {
   return ws
 }
 
-function xunfei60() {
+function xunfei60(filePath) {
 
   // 系统配置 
   const config = {
@@ -209,7 +184,7 @@ function xunfei60() {
     apiSecret: "27236883328363967717625fbbf6bd2c",
     //在控制台-我的应用-语音听写（流式版）获取
     apiKey: "0e606eafda5fa80a56e6a8fdf4aac4c3",
-    file: "./16k_10.pcm", //请填写您的音频文件路径
+    file: './t.ogg',
     uri: "/v2/iat",
     highWaterMark: 1280
   }
@@ -313,7 +288,10 @@ function xunfei60() {
   }
 
   // 传输数据
-  function send(data) {
+  function send(data, outStatus) {
+    if (outStatus) {
+      status = outStatus
+    }
     let frame = "";
     let frameDataSection = {
       "status": status,
