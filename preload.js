@@ -69,8 +69,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       video: false
     })
     .then((stream) => {
-      let sendData = xunfei60()
-      const ddd = []
+      let sendData = null
+
+      // 存储 16bit pcm 数据
+      let ddd = []
 
       const context = new AudioContext()
       // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
@@ -80,30 +82,70 @@ window.addEventListener('DOMContentLoaded', async () => {
       const ms = context.createMediaStreamSource(stream)
       recorder.onaudioprocess = e => {
         let d = e.inputBuffer.getChannelData(0)
-        ddd.push(...d)
+        const data = to16BitPCM(to16kHz(d))
+        var _buffer;
+        (_buffer = ddd).push.apply(_buffer, _toConsumableArray(data))
       }
       ms.connect(recorder)
       recorder.connect(context.destination)
 
+      // 语音听写
       let t = 0
       startAudio.addEventListener('click', () => {
-        sendData('', 0)
-        t = setInterval(() => {
-          let e = ddd.splice(0, 1280)
-          if (ddd.length === 0) {
-            clearInterval(t)
-            sendData('', 2)
-            return
-          }
-          sendData(e)
-        }, 40)
+        sendData = xunfei60()
+        // 初始化录音数据
+        ddd = []
+        setTimeout(() => {
+          sendData(ddd.splice(0, 1280), 0)
+          // 推荐频率，每 40ms 发送 1280 字节数据
+          t = setInterval(() => {
+            let e = ddd.splice(0, 1280)
+            if (ddd.length === 0) {
+              console.log('数据发送完成')
+              clearInterval(t)
+              sendData('', 2)
+              return
+            }
+            sendData(e)
+          }, 40)
+        }, 2000)
       })
       stopAudio.addEventListener('click', () => {
         clearInterval(t)
+        // 发送结束标志位
         sendData('', 2)
       })
-    })
 
+
+      // 实时转写
+      // xunfei((ws) => {
+      //   let t = 0
+      //   startAudio.addEventListener('click', () => {
+      //     // 初始化录音数据
+      //     ddd = []
+      //     setTimeout(() => {
+      //       ws.send(ddd.splice(0, 1280))
+      //       // 推荐频率，每 40ms 发送 1280 字节数据
+      //       t = setInterval(() => {
+      //         let e = ddd.splice(0, 1280)
+      //         if (ddd.length === 0) {
+      //           console.log('数据发送完成')
+      //           clearInterval(t)
+      //           ws.send("{\"end\": true}")
+      //           return
+      //         }
+      //         ws.send(e)
+      //       }, 40)
+      //     }, 2000)
+      //   })
+      //   stopAudio.addEventListener('click', () => {
+      //     clearInterval(t)
+      //     // 发送结束标志位
+      //     ws.send("{\"end\": true}")
+      //   })
+      // })
+
+    })
 })
 
 window.addEventListener('load', () => {
@@ -120,7 +162,7 @@ window.addEventListener('load', () => {
 
 })
 
-function xunfei() {
+function xunfei(startMsg) {
   // 系统配置
   const config = {
     // 请求地址
@@ -158,6 +200,8 @@ function xunfei() {
       case 'started':
         log.info('started!')
         log.info('sid is:' + res.sid)
+
+        startMsg(ws)
         break
       case 'result':
         // ... do something
@@ -200,11 +244,9 @@ function xunfei() {
     let base64 = CryptoJS.enc.Base64.stringify(sha1)
     return encodeURIComponent(base64)
   }
-
-  return ws
 }
 
-function xunfei60(filePath) {
+function xunfei60() {
 
   // 系统配置 
   const config = {
@@ -263,40 +305,44 @@ function xunfei60(filePath) {
       console.log(`err:${err}`)
       return
     }
-    res = JSON.parse(data)
-    if (res.code != 0) {
-      console.log(`error code ${res.code}, reason ${res.message}`)
-      return
-    }
+    let res = JSON.parse(data)
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
+    console.log(res)
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
+    res.data && res.data.result && genText(res.data.result)
 
-    let str = ""
-    if (res.data.status == 2) {
-      // res.data.status ==2 说明数据全部返回完毕，可以关闭连接，释放资源
-      str += "最终识别结果"
-      currentSid = res.sid
-      ws.close()
-    } else {
-      str += "中间识别结果"
-    }
-    iatResult[res.data.result.sn] = res.data.result
-    if (res.data.result.pgs == 'rpl') {
-      res.data.result.rg.forEach(i => {
-        iatResult[i] = null
-      })
-      str += "【动态修正】"
-    }
-    str += "："
-    iatResult.forEach(i => {
-      if (i != null) {
-        i.ws.forEach(j => {
-          j.cw.forEach(k => {
-            str += k.w
-          })
-        })
-      }
-    })
-    console.log(str)
-    // ... do something
+    // if (res.code != 0) {
+    //   console.log(`error code ${res.code}, reason ${res.message}`)
+    //   return
+    // }
+
+    // let str = ""
+    // if (res.data.status == 2) {
+    //   // res.data.status ==2 说明数据全部返回完毕，可以关闭连接，释放资源
+    //   str += "最终识别结果"
+    //   currentSid = res.sid
+    //   ws.close()
+    // } else {
+    //   str += "中间识别结果"
+    // }
+    // iatResult[res.data.result.sn] = res.data.result
+    // if (res.data.result.pgs == 'rpl') {
+    //   res.data.result.rg.forEach(i => {
+    //     iatResult[i] = null
+    //   })
+    //   str += "【动态修正】"
+    // }
+    // str += "："
+    // iatResult.forEach(i => {
+    //   if (i != null) {
+    //     i.ws.forEach(j => {
+    //       j.cw.forEach(k => {
+    //         str += k.w
+    //       })
+    //     })
+    //   }
+    // })
+    // console.log(str)
   })
 
   // 资源释放
@@ -361,21 +407,67 @@ function xunfei60(filePath) {
         }
         break;
     }
-    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
-    console.log(frame)
-    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
     ws.send(JSON.stringify(frame))
   }
 
   return send
 }
 
-function ArrayBufferToBase64(buffer) {
-  var binary = '';
-  var bytes = new Uint8Array(buffer);
-  var len = bytes.byteLength;
-  for (var i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+let resultText = ''
+function genText (data) {
+  let result_output = document.getElementById('result_output')
+
+  var str = '';
+  var resultStr = '';
+  var ws = data.ws || [];
+  for (var i = 0; i < ws.length; i++) {
+    str = str + ws[i].cw[0].w;
   }
-  return window.btoa(binary);
+  // 开启wpgs会有此字段
+  // 取值为 "apd"时表示该片结果是追加到前面的最终结果；取值为"rpl" 时表示替换前面的部分结果，替换范围为rg字段
+  if (!data.pgs || data.pgs === 'apd') {
+    resultText = result_output.innerText;
+  }
+  resultStr = resultText + str
+  result_output.innerText = resultStr
 }
+
+function ArrayBufferToBase64(buffer) {
+  var binary = ''
+  var bytes = new Uint8Array(buffer)
+  var len = bytes.byteLength
+  for (var i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return window.btoa(binary)
+}
+
+function to16kHz(buffer) {
+  var data = new Float32Array(buffer)
+  var fitCount = Math.round(data.length * (16000 / 44100))
+  var newData = new Float32Array(fitCount)
+  var springFactor = (data.length - 1) / (fitCount - 1)
+  newData[0] = data[0]
+  for (var i = 1; i < fitCount - 1; i++) {
+    var tmp = i * springFactor
+    var before = Math.floor(tmp).toFixed()
+    var after = Math.ceil(tmp).toFixed()
+    var atPoint = tmp - before
+    newData[i] = data[before] + (data[after] - data[before]) * atPoint
+  }
+  newData[fitCount - 1] = data[data.length - 1]
+  return newData
+}
+function to16BitPCM(input) {
+  var dataLength = input.length * (16 / 8)
+  var dataBuffer = new ArrayBuffer(dataLength)
+  var dataView = new DataView(dataBuffer)
+  var offset = 0
+  for (var i = 0; i < input.length; i++, offset += 2) {
+    var s = Math.max(-1, Math.min(1, input[i]))
+    dataView.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true)
+  }
+  return Array.from(new Int8Array(dataView.buffer))
+}
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
