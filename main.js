@@ -1,7 +1,6 @@
 // 此模块控制应用的声明周期并创建原生的浏览窗口
 const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences, session} = require('electron')
 const path = require('path')
-const os = require('os')
 
 // 使用启动命令行方式翻墙
 // app.commandLine.appendSwitch('proxy-pac-url', 'http://hq-static.oss-cn-beijing.aliyuncs.com/uskid-garden/uskid.pac')

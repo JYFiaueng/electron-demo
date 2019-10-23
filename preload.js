@@ -8,8 +8,6 @@
 const fs = require('fs')
 const CryptoJS = require('crypto-js')
 const WebSocket = require('ws')
-const log = require('log4node')
-const toBuffer = require('blob-to-buffer')
 const {
   ipcRenderer
 } = require('electron')
@@ -56,51 +54,44 @@ window.addEventListener('DOMContentLoaded', async () => {
   const startAudio = document.getElementById('startAudio')
   const stopAudio = document.getElementById('stopAudio')
 
-  function a(t) {
-    if (Array.isArray(t)) {
-      for (var e = 0, n = Array(t.length); e < t.length; e++) n[e] = t[e];
-      return n
-    }
-    return Array.from(t)
-  }
+  const startSAudio = document.getElementById('startSAudio')
+  const stopSAudio = document.getElementById('stopSAudio')
 
+  // 语音实时转换
   navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false
     })
     .then((stream) => {
-      let sendData = null
-
-      // 存储 16bit pcm 数据
-      let ddd = []
-
-      const context = new AudioContext()
-      // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
-      const recorder = context.createScriptProcessor(0, 1, 1)
-      // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)
-      // (可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
-      const ms = context.createMediaStreamSource(stream)
-      recorder.onaudioprocess = e => {
-        let d = e.inputBuffer.getChannelData(0)
-        const data = to16BitPCM(to16kHz(d))
-        var _buffer;
-        (_buffer = ddd).push.apply(_buffer, _toConsumableArray(data))
-      }
-      ms.connect(recorder)
-      recorder.connect(context.destination)
 
       // 语音听写
-      let t = 0
       startAudio.addEventListener('click', () => {
+        let t = 0
+        let sendData = null
+        // 存储 16bit pcm 数据
+        let bufXunfei60 = []
+        const context = new AudioContext()
+        // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
+        const recorder = context.createScriptProcessor(0, 1, 1)
+        // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)
+        // (可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
+        const ms = context.createMediaStreamSource(stream)
+        recorder.onaudioprocess = e => {
+          let d = e.inputBuffer.getChannelData(0)
+          const data = to16BitPCM(to16kHz(d))
+          var _buffer60;
+          (_buffer60 = bufXunfei60).push.apply(_buffer60, _toConsumableArray(data))
+        }
+        ms.connect(recorder)
+        recorder.connect(context.destination)
         sendData = xunfei60()
         // 初始化录音数据
-        ddd = []
         setTimeout(() => {
-          sendData(ddd.splice(0, 1280), 0)
+          sendData(bufXunfei60.splice(0, 1280), 0)
           // 推荐频率，每 40ms 发送 1280 字节数据
           t = setInterval(() => {
-            let e = ddd.splice(0, 1280)
-            if (ddd.length === 0) {
+            let e = bufXunfei60.splice(0, 1280)
+            if (bufXunfei60.length === 0) {
               console.log('数据发送完成')
               clearInterval(t)
               sendData('', 2)
@@ -108,44 +99,61 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
             sendData(e)
           }, 40)
+          stopAudio.addEventListener('click', () => {
+            clearInterval(t)
+            // 发送结束标志位
+            sendData('', 2)
+            ms.disconnect(recorder)
+            recorder.disconnect(context.destination)
+          })
         }, 2000)
       })
-      stopAudio.addEventListener('click', () => {
-        clearInterval(t)
-        // 发送结束标志位
-        sendData('', 2)
+
+      // 实时语音转写
+      startSAudio.addEventListener('click', () => {
+        let t = 0
+        // 存储 16bit pcm 数据
+        let bufXunfei = []
+        const context = new AudioContext()
+        // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
+        const recorder = context.createScriptProcessor(0, 1, 1)
+        // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)
+        // (可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
+        const ms = context.createMediaStreamSource(stream)
+        recorder.onaudioprocess = e => {
+          let d = e.inputBuffer.getChannelData(0)
+          const data = to16BitPCM(to16kHz(d))
+          var _buffer;
+          (_buffer = bufXunfei).push.apply(_buffer, _toConsumableArray(data))
+        }
+        ms.connect(recorder)
+        recorder.connect(context.destination)
+        xunfei((ws) => {
+          setTimeout(() => {
+            // 推荐频率，每 40ms 发送 1280 字节数据
+            t = setInterval(() => {
+              let e = bufXunfei.splice(0, 1280)
+              if (bufXunfei.length === 0) {
+                console.log('数据发送完成')
+                clearInterval(t)
+                ws.send("{\"end\": true}")
+                return
+              }
+              ws.send(e)
+            }, 40)
+          }, 2000)
+          stopSAudio.addEventListener('click', () => {
+            clearInterval(t)
+            // 发送结束标志位
+            ws.send("{\"end\": true}")
+            ms.disconnect(recorder)
+            recorder.disconnect(context.destination)
+          })
+        })
       })
 
-
-      // 实时转写
-      // xunfei((ws) => {
-      //   let t = 0
-      //   startAudio.addEventListener('click', () => {
-      //     // 初始化录音数据
-      //     ddd = []
-      //     setTimeout(() => {
-      //       ws.send(ddd.splice(0, 1280))
-      //       // 推荐频率，每 40ms 发送 1280 字节数据
-      //       t = setInterval(() => {
-      //         let e = ddd.splice(0, 1280)
-      //         if (ddd.length === 0) {
-      //           console.log('数据发送完成')
-      //           clearInterval(t)
-      //           ws.send("{\"end\": true}")
-      //           return
-      //         }
-      //         ws.send(e)
-      //       }, 40)
-      //     }, 2000)
-      //   })
-      //   stopAudio.addEventListener('click', () => {
-      //     clearInterval(t)
-      //     // 发送结束标志位
-      //     ws.send("{\"end\": true}")
-      //   })
-      // })
-
     })
+
 })
 
 window.addEventListener('load', () => {
@@ -181,47 +189,47 @@ function xunfei(startMsg) {
 
   // 连接建立完毕，读取数据进行识别
   ws.on('open', (event) => {
-    log.info("websocket connect!")
+    console.log("websocket connect!")
   })
 
   // 得到识别结果后进行处理，仅供参考，具体业务具体对待
   let rtasrResult = []
   ws.on('message', (data, err) => {
     if (err) {
-      log.info(`err:${err}`)
+      console.log(`err:${err}`)
       return
     }
     let res = JSON.parse(data)
     switch (res.action) {
       case 'error':
-        log.info(`error code:${res.code} desc:${res.desc}`)
+        console.log(`error code:${res.code} desc:${res.desc}`)
         break
         // 连接建立
       case 'started':
-        log.info('started!')
-        log.info('sid is:' + res.sid)
+        console.log('started!')
+        console.log('sid is:' + res.sid)
 
         startMsg(ws)
         break
       case 'result':
-        // ... do something
+        let result_output_s = document.getElementById('result_output_s')
         let data = JSON.parse(res.data)
         rtasrResult[data.seg_id] = data
         // 把转写结果解析为句子
         if (data.cn.st.type == 0) {
+          let str = ''
           rtasrResult.forEach(i => {
-            let str = "实时转写"
-            str += (i.cn.st.type == 0) ? "【最终】识别结果：" : "【中间】识别结果："
-            i.cn.st.rt.forEach(j => {
-              j.ws.forEach(k => {
-                k.cw.forEach(l => {
-                  str += l.w
+            if (i.cn.st.type == 0) {
+              i.cn.st.rt.forEach(j => {
+                j.ws.forEach(k => {
+                  k.cw.forEach(l => {
+                    str += l.w
+                  })
                 })
               })
-            })
-            log.info(str)
+            }
           })
-
+          result_output_s.innerText = str
         }
         break
     }
@@ -229,12 +237,12 @@ function xunfei(startMsg) {
 
   // 资源释放
   ws.on('close', () => {
-    log.info('connect close!')
+    console.log('connect close!')
   })
 
   // 建连错误
   ws.on('error', (err) => {
-    log.error("websocket connect err: " + err)
+    console.error("websocket connect err: " + err)
   })
 
   // 鉴权签名
@@ -286,17 +294,6 @@ function xunfei60() {
   // 连接建立完毕，读取数据进行识别
   ws.on('open', (event) => {
     console.log("websocket connect!")
-    // var readerStream = fs.createReadStream(config.file, {
-    //   highWaterMark: config.highWaterMark
-    // });
-    // readerStream.on('data', function (chunk) {
-    //   send(chunk)
-    // });
-    // // 最终帧发送结束
-    // readerStream.on('end', function () {
-    //   status = FRAME.STATUS_LAST_FRAME
-    //   send("")
-    // });
   })
 
   // 得到识别结果后进行处理，仅供参考，具体业务具体对待
@@ -306,43 +303,7 @@ function xunfei60() {
       return
     }
     let res = JSON.parse(data)
-    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
-    console.log(res)
-    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
     res.data && res.data.result && genText(res.data.result)
-
-    // if (res.code != 0) {
-    //   console.log(`error code ${res.code}, reason ${res.message}`)
-    //   return
-    // }
-
-    // let str = ""
-    // if (res.data.status == 2) {
-    //   // res.data.status ==2 说明数据全部返回完毕，可以关闭连接，释放资源
-    //   str += "最终识别结果"
-    //   currentSid = res.sid
-    //   ws.close()
-    // } else {
-    //   str += "中间识别结果"
-    // }
-    // iatResult[res.data.result.sn] = res.data.result
-    // if (res.data.result.pgs == 'rpl') {
-    //   res.data.result.rg.forEach(i => {
-    //     iatResult[i] = null
-    //   })
-    //   str += "【动态修正】"
-    // }
-    // str += "："
-    // iatResult.forEach(i => {
-    //   if (i != null) {
-    //     i.ws.forEach(j => {
-    //       j.cw.forEach(k => {
-    //         str += k.w
-    //       })
-    //     })
-    //   }
-    // })
-    // console.log(str)
   })
 
   // 资源释放
@@ -414,7 +375,8 @@ function xunfei60() {
 }
 
 let resultText = ''
-function genText (data) {
+
+function genText(data) {
   let result_output = document.getElementById('result_output')
 
   var str = '';
@@ -458,6 +420,7 @@ function to16kHz(buffer) {
   newData[fitCount - 1] = data[data.length - 1]
   return newData
 }
+
 function to16BitPCM(input) {
   var dataLength = input.length * (16 / 8)
   var dataBuffer = new ArrayBuffer(dataLength)
@@ -470,4 +433,13 @@ function to16BitPCM(input) {
   return Array.from(new Int8Array(dataView.buffer))
 }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+function _toConsumableArray(arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+      arr2[i] = arr[i];
+    }
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
+}

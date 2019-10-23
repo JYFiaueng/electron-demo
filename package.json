@@ -45,15 +45,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "blob-to-buffer": "^1.2.8",
     "crypto-js": "^3.1.9-1",
     "electron-chrome-extension": "^4.0.3",
     "electron-squirrel-startup": "^1.0.0",
-    "ffmpeg-static": "^2.7.0",
-    "log4node": "^0.1.6",
-    "node-opus": "^0.3.3",
-    "opusscript": "0.0.7",
-    "prism-media": "^1.1.0",
     "ws": "^7.2.0"
   },
   "devDependencies": {

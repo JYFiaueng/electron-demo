@@ -13,27 +13,46 @@
     and Electron <span id="electron-version"></span>
     </div>
 
+    <hr>
+
     <h2>Notification</h2>
     <input type="button" value="点击通知" id="notification">
+
+    <hr>
 
     <h2>离屏渲染，在窗口中获取到某个 web 地址的内容</h2>
     <input type="button" value="点击跳转至 github" id="screenPaint">
 
+    <hr>
+
     <h2>curl google</h2>
     <input type="button" value="send google" id="curlGoogle">
+
+    <hr>
 
     <h2>File API</h2>
     <p>Drag your file here</p>
     <p>DOM 文件接口为原生文件提供了抽象, 以便让用户使用 HTML5 文件 API 直接处理原生文件。 Electron已经向 文件 接口添加了一个 path 属性, 在文件系统上暴露出文件的真实路径</p>
 
+    <hr>
+
     <h2>window.open</h2>
     <input type="button" value="createWindow" id="createWindow">
     <p>创建一个功能被限制的 BrowserWindow</p>
 
-    <h2>录音</h2>
+    <hr>
+
+    <h2>60秒限制性语音识别转换</h2>
     <input type="button" value="开始录音" id="startAudio">
     <input type="button" value="结束录音" id="stopAudio">
     <div>识别结果：<b id="result_output"></b></div>
+
+    <hr>
+
+    <h2>实时语音转换</h2>
+    <input type="button" value="开始录音" id="startSAudio">
+    <input type="button" value="结束录音" id="stopSAudio">
+    <div>识别结果：<b id="result_output_s"></b></div>
 
     <!-- 还可以在此进程中引入其他文件 -->
     <script src="./renderer.js"></script>
