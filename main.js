@@ -1,5 +1,15 @@
 // 此模块控制应用的声明周期并创建原生的浏览窗口
-const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences, session, dialog} = require('electron')
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  MenuItem,
+  globalShortcut,
+  ipcMain,
+  systemPreferences,
+  session,
+  dialog
+} = require('electron')
 const path = require('path')
 
 // 使用启动命令行方式翻墙
@@ -14,7 +24,7 @@ process.env.GOOGLE_API_KEY = 'AIzaSyDWD4D7lOTUHZw7qeDZPMfA2G623kI6gmg'
 process.env.GOOGLE_DEFAULT_CLIENT_SECRET = 'izwpPuDKWzJ4oomRde12348U'
 process.env.GOOGLE_DEFAULT_CLIENT_ID = '917691297121-vvnmlea2pgptol17mqctcedjv61pqhuk.apps.googleusercontent.com'
 
-function showMain () {
+function showMain() {
 
   console.log('ready')
 
@@ -29,7 +39,7 @@ function showMain () {
 
   // 设置 session 代理翻墙
   mainWindow.webContents.session.setProxy({
-    pacScript:'file://' + __dirname + '/pac.js',
+    pacScript: 'file://' + __dirname + '/pac.js',
     // proxyRules: 'socks5://g.kuomu.xyz:1443',
     // proxyRules: 'socks5://b.kuomu.xyz:1443',
   }, () => {
@@ -44,6 +54,7 @@ function showMain () {
 
   // 设置任务栏进度条
   let progressCtrl = 0
+
   !(() => {
     let progress = 0
     progressCtrl = setInterval(() => {
@@ -56,18 +67,24 @@ function showMain () {
   })()
 
   // 自定义 Dock
-  const dockMenu = Menu.buildFromTemplate([
-    {
+  const dockMenu = Menu.buildFromTemplate([{
       label: 'New Window',
-      click () { console.log('New Window') }
+      click() {
+        console.log('New Window')
+      }
     }, {
       label: 'New Window with Settings',
-      submenu: [
-        { label: 'Basic' },
-        { label: 'Pro' }
+      submenu: [{
+          label: 'Basic'
+        },
+        {
+          label: 'Pro'
+        }
       ]
     },
-    { label: 'New Command...' }
+    {
+      label: 'New Command...'
+    }
   ])
   app.dock.setMenu(dockMenu)
 
@@ -77,12 +94,187 @@ function showMain () {
   menu.append(new MenuItem({
     label: 'Print',
     accelerator: 'Alt+Cmd+I',
-    click: () => { console.log('time to print stuff') }
+    click: () => {
+      console.log('time to print stuff')
+    }
   }))
   // 全局快捷键
   globalShortcut.register('CommandOrControl+Y', () => {
     console.log('CommandOrControl+Y is pressed')
   })
+  const isMac = true
+  const template = [
+    // { role: 'appMenu' }
+    ...(process.platform === 'darwin' ? [{
+      label: app.getName(),
+      submenu: [{
+          role: 'about'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'services'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'hide'
+        },
+        {
+          role: 'hideothers'
+        },
+        {
+          role: 'unhide'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'quit'
+        }
+      ]
+    }] : []),
+    // { role: 'fileMenu' }
+    {
+      label: 'File',
+      submenu: [
+        isMac ? {
+          role: 'close'
+        } : {
+          role: 'quit'
+        }
+      ]
+    },
+    // { role: 'editMenu' }
+    {
+      label: 'Edit',
+      submenu: [{
+          role: 'undo'
+        },
+        {
+          role: 'redo'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'cut'
+        },
+        {
+          role: 'copy'
+        },
+        {
+          role: 'paste'
+        },
+        ...(isMac ? [{
+            role: 'pasteAndMatchStyle'
+          },
+          {
+            role: 'delete'
+          },
+          {
+            role: 'selectAll'
+          },
+          {
+            type: 'separator'
+          },
+          {
+            label: 'Speech',
+            submenu: [{
+                role: 'startspeaking'
+              },
+              {
+                role: 'stopspeaking'
+              }
+            ]
+          }
+        ] : [{
+            role: 'delete'
+          },
+          {
+            type: 'separator'
+          },
+          {
+            role: 'selectAll'
+          }
+        ])
+      ]
+    },
+    // { role: 'viewMenu' }
+    {
+      label: 'View',
+      submenu: [{
+          role: 'reload'
+        },
+        {
+          role: 'forcereload'
+        },
+        {
+          role: 'toggledevtools'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'resetzoom'
+        },
+        {
+          role: 'zoomin'
+        },
+        {
+          role: 'zoomout'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'togglefullscreen'
+        }
+      ]
+    },
+    // { role: 'windowMenu' }
+    {
+      label: 'Window',
+      submenu: [{
+          role: 'minimize'
+        },
+        {
+          role: 'zoom'
+        },
+        ...(isMac ? [{
+            type: 'separator'
+          },
+          {
+            role: 'front'
+          },
+          {
+            type: 'separator'
+          },
+          {
+            role: 'window'
+          }
+        ] : [{
+          role: 'close'
+        }])
+      ]
+    },
+    {
+      role: 'help',
+      submenu: [{
+        label: 'Learn More',
+        click: async () => {
+          const {
+            shell
+          } = require('electron')
+          await shell.openExternal('https://electronjs.org')
+        }
+      }]
+    }
+  ]
+  const tmpMenu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(tmpMenu)
 
   // 在 macOS，一个窗口可以设置它展示的文件，文件的图标可以出现在标题栏，当用户 Command-Click 或者 Control-Click 标题栏，文件路径弹窗将会出现
   mainWindow.setRepresentedFilename('/etc/passwd')
@@ -126,7 +318,9 @@ ipcMain.on('screen-paint', (event) => {
 
 // 文件选择对话框
 ipcMain.on('show-dialog', (event) => {
-  dialog.showOpenDialog({ properties: ['openFile', 'openDirectory', 'multiSelections'] })
+  dialog.showOpenDialog({
+    properties: ['openFile', 'openDirectory', 'multiSelections']
+  })
 })
 
 // 当 Electron 完成初始化并准备创建浏览窗口时触发此方法
@@ -169,7 +363,7 @@ app.on('session-created', () => console.log('session-created'))
 // 跟踪 mac 系统主题
 systemPreferences.subscribeNotification(
   'AppleInterfaceThemeChangedNotification',
-  function theThemeHasChanged () {
+  function theThemeHasChanged() {
     updateMyAppTheme(systemPreferences.isDarkMode())
   }
 )
