@@ -11,6 +11,9 @@ const WebSocket = require('ws')
 const {
   ipcRenderer
 } = require('electron')
+const {
+  dialog
+} = require('electron').remote
 
 window.addEventListener('DOMContentLoaded', async () => {
 
@@ -167,6 +170,27 @@ window.addEventListener('load', () => {
   updateOnlineStatus()
 
   console.log('page process.isMainFram: ', process.isMainFram)
+
+  // 触发弹出文件选择框
+  document.getElementById('showDialog').addEventListener('click', () => {
+    // 通过 ipc 通道发送打开对话框消息
+    // ipcRenderer.send('show-dialog')
+    // 通过 remote 直接打开对话框
+    dialog.showOpenDialog({
+      title: '这里是指定的对话框名称',
+      defaultPath: '/Users/mac/Documents',
+      properties: ['openFile', 'openDirectory', 'multiSelections', 'showHiddenFiles'],
+      callback: () => {
+        console.log('open dialog')
+      },
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
+        { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
+        { name: 'Custom File Type', extensions: ['as'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+  })
 
 })
 

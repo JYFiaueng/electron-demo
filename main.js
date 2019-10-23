@@ -1,5 +1,5 @@
 // 此模块控制应用的声明周期并创建原生的浏览窗口
-const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences, session} = require('electron')
+const {app, BrowserWindow, Menu, MenuItem, globalShortcut, ipcMain, systemPreferences, session, dialog} = require('electron')
 const path = require('path')
 
 // 使用启动命令行方式翻墙
@@ -122,6 +122,11 @@ ipcMain.on('screen-paint', (event) => {
     // updateBitmap(dirty, image.getBitmap())
   })
   mainWindow.webContents.setFrameRate(30)
+})
+
+// 文件选择对话框
+ipcMain.on('show-dialog', (event) => {
+  dialog.showOpenDialog({ properties: ['openFile', 'openDirectory', 'multiSelections'] })
 })
 
 // 当 Electron 完成初始化并准备创建浏览窗口时触发此方法
