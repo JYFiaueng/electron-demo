@@ -8,8 +8,11 @@ const {
   ipcMain,
   systemPreferences,
   session,
-  dialog
+  dialog,
+  net,
+  netLog
 } = require('electron')
+const electron = require('electron')
 const path = require('path')
 
 // 使用启动命令行方式翻墙
@@ -28,10 +31,14 @@ function showMain() {
 
   console.log('ready')
 
+  // 检索有关屏幕大小、显示器、光标位置等的信息
+  const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize
+  console.log('鼠标的绝对位置：', electron.screen.getCursorScreenPoint())
+
   // 创建一个浏览窗口
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width,
+    height,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -55,16 +62,16 @@ function showMain() {
   // 设置任务栏进度条
   let progressCtrl = 0
 
-  !(() => {
-    let progress = 0
-    progressCtrl = setInterval(() => {
-      if (progress > 1) {
-        progress = 0
-      }
-      progress += 0.01
-      mainWindow.setProgressBar(progress)
-    }, 10)
-  })()
+    !(() => {
+      let progress = 0
+      progressCtrl = setInterval(() => {
+        if (progress > 1) {
+          progress = 0
+        }
+        progress += 0.01
+        mainWindow.setProgressBar(progress)
+      }, 10)
+    })()
 
   // 自定义 Dock
   const dockMenu = Menu.buildFromTemplate([{
@@ -300,6 +307,34 @@ function showMain() {
     mainWindow = null
     clearInterval(progressCtrl)
   })
+
+  // 网络模块
+  const request = net.request('https://github.com')
+  request.on('response', (response) => {
+    console.log(`STATUS: ${response.statusCode}`)
+    console.log(`HEADERS: ${JSON.stringify(response.headers)}`)
+    response.on('data', (chunk) => {
+    })
+    response.on('end', () => {
+      console.log('No more data in response.')
+    })
+  })
+  request.end()
+
+  // 电源监视器模块
+  electron.powerMonitor.on('suspend', () => console.log('suspend')) // 系统挂起
+  electron.powerMonitor.on('resume', () => console.log('resume')) // 系统恢复
+  electron.powerMonitor.on('on-ac', () => console.log('on-ac')) // 切换为交流电
+  electron.powerMonitor.on('on-battery', () => console.log('on-battery')) // 切换为电池
+  electron.powerMonitor.on('shutdown', () => console.log('shutdown')) // 即将重启或关机
+  electron.powerMonitor.on('lock-screen', () => console.log('lock-screen')) // 屏幕锁定
+  electron.powerMonitor.on('unlock-screen', () => console.log('unlock-screen')) // 屏幕解锁
+
+  // session
+  // 管理浏览器会话、cookie、缓存、代理设置等
+  const sess = mainWindow.webContents.session
+  console.log(sess.getUserAgent())
+
 }
 
 // 在线/离线事件探测，js 脚本需要加入到预置页面中，通过 ipcMain 进行主进程和窗口进程的通信
