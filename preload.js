@@ -67,6 +67,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     })
     .then((stream) => {
 
+      // https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Audio_API
+
       // 语音听写
       startAudio.addEventListener('click', () => {
         let t = 0
@@ -74,19 +76,32 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 存储 16bit pcm 数据
         let bufXunfei60 = []
         const context = new AudioContext()
-        // 创建一个ScriptProcessorNode 用于通过JavaScript直接处理音频
+        // 创建一个 ScriptProcessorNode 节点用于通过JavaScript直接处理音频
+        // 第一个参数是指定缓冲区大小，传 0 表示会自动选取一个适合当前环境的适当的数值
+        // 后面两个参数分别用于指定输入输出节点的声道数量
         const recorder = context.createScriptProcessor(0, 1, 1)
-        // 方法用于创建一个新的MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)
+        // 方法用于创建一个新的 MediaStreamAudioSourceNode 对象, 需要传入一个媒体流对象(MediaStream对象)
         // (可以从 navigator.getUserMedia 获得MediaStream对象实例), 然后来自MediaStream的音频就可以被播放和操作
+        // 创建一个MediaStreamAudioSourceNode接口来关联可能来自本地计算机麦克风或其他来源的音频流MediaStream
+        // 将来自计算机的音视频设备的 MediaStream 对象与 AudioContext 建立关联
+        // MediaStreamAudioSourceNode 接口没有输入，只有一个输出，输出频道数目为 1
         const ms = context.createMediaStreamSource(stream)
+        // ScriptProcessorNode 节点接收输入会持续不断的触发下面事件
         recorder.onaudioprocess = e => {
           let d = e.inputBuffer.getChannelData(0)
           const data = to16BitPCM(to16kHz(d))
           var _buffer60;
           (_buffer60 = bufXunfei60).push.apply(_buffer60, _toConsumableArray(data))
         }
+        // 将 MediaStreamAudioSourceNode 的输出连接至 AudioNode 节点
         ms.connect(recorder)
         recorder.connect(context.destination)
+        console.log('-------context-------')
+        console.log(context)
+        console.log('-------recorder-------')
+        console.log(recorder)
+        console.log('-------ms-------')
+        console.log(ms)
         sendData = xunfei60()
         // 初始化录音数据
         setTimeout(() => {
