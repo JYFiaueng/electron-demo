@@ -9,7 +9,8 @@ const {
   systemPreferences,
   session,
   dialog,
-  net
+  net,
+  webContents
 } = require('electron')
 const electron = require('electron')
 const path = require('path')
@@ -350,7 +351,8 @@ function showMain() {
     }
   })
 
-  // webContents 是 EventEmitter 的实例
+  // webContents 是 EventEmitter 的实例，负责渲染和控制网页
+  console.log(webContents.getAllWebContents())
 
 }
 
