@@ -63,11 +63,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 语音实时转换
   navigator.mediaDevices.getUserMedia({
       audio: true,
-      video: false
+      video: true
     })
-    .then((stream) => {
+    .then((stream) => { // 得到一个 MediaStream 类型的实例
 
       // https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Audio_API
+
+      // 关闭媒体
+      function closeMedia() {
+        stream.getTracks().forEach(track => track.stop())
+      }
 
       // 语音听写
       startAudio.addEventListener('click', () => {
@@ -123,6 +128,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             sendData('', 2)
             ms.disconnect(recorder)
             recorder.disconnect(context.destination)
+            closeMedia()
           })
         }, 2000)
       })
@@ -166,6 +172,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             ws.send("{\"end\": true}")
             ms.disconnect(recorder)
             recorder.disconnect(context.destination)
+            closeMedia()
           })
         })
       })
