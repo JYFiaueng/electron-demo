@@ -9,8 +9,7 @@ const {
   systemPreferences,
   session,
   dialog,
-  net,
-  netLog
+  net
 } = require('electron')
 const electron = require('electron')
 const path = require('path')
@@ -332,8 +331,26 @@ function showMain() {
 
   // session
   // 管理浏览器会话、cookie、缓存、代理设置等
+  // webContents模块的 session 属性和 session 模块都可以直接访问现有页面的 session
   const sess = mainWindow.webContents.session
   console.log(sess.getUserAgent())
+  console.log(session.defaultSession) // 应用程序的默认 session 对象
+  // 创建或者返回一个现有的 session
+  // 以 persist: 开头该页面将使用持续的 session，并在所有页面生效，且使用同一个 session partition
+  // 如果未使用 persist: 前缀，页面将使用 in-memory session，如果没有设置partition，app 将返回默认的session
+  const sessTest = session.fromPartition('persist:test')
+  sessTest.getCacheSize((err, size) => {
+    console.log('test session size(bytes): ', size)
+  })
+  sess.getCacheSize((err, size) => {
+    console.log('default session size(bytes): ', size)
+    if (size > 0) {
+      // 清除缓存
+      sess.clearCache()
+    }
+  })
+
+  // webContents 是 EventEmitter 的实例
 
 }
 
