@@ -1,6 +1,5 @@
 const CryptoJS = require('crypto-js')
 const WebSocket = require('ws')
-const {EventEmitter} = require('events')
 
 // 数据帧定义
 const FRAME = {
@@ -23,20 +22,32 @@ async function DOMContentLoadedFn() {
     startAudio.setAttribute('disabled', true)
     remainingTime.innerText = 0
     result_output.innerText = ''
+    let t = 0
 
+    // 开启设备音频权限并收集处理音频数据
     const medisStream = await openAudio()
-    const sendData = await xunfei60(() => {
-      startAudio.removeAttribute('disabled')
-    })
     const audioBuffer = []
+    // 拿到返回的函数，用于停止音频设备
     const closeAudio = buildJsHandleAudio(medisStream, (pcmData) => {
+      // 对原始 pcm 数据进行转换
+      // 不明白这是用的什么算法
       const data = to16BitPCM(to16kHz(pcmData))
       audioBuffer.push(..._toConsumableArray(data))
     })
 
-    function stopEventFn (){
+    // 建立科大讯飞 ws 连接，返回 send 方法用于数据发送
+    // 接收一个回调，在发生 close 事件或者 error 事件时调用
+    const sendData = await xunfei60(() => {
+      startAudio.removeAttribute('disabled')
       clearInterval(t)
+      closeAudio()
+      stopAudio.removeEventListener('click', stopEventFn)
+    })
+
+    // 停止按钮
+    function stopEventFn (){
       sendData('', FRAME.STATUS_LAST_FRAME)
+      clearInterval(t)
       closeAudio()
       stopAudio.removeEventListener('click', stopEventFn)
     }
@@ -47,31 +58,36 @@ async function DOMContentLoadedFn() {
 
     // 发送开始帧
     sendData(audioBuffer.splice(0, highWaterMark), FRAME.STATUS_FIRST_FRAME)
-    // 按照推荐的频率，每 40ms 发送 1280 字节的数据
-    let t = setInterval(() => {
-      let e = audioBuffer.splice(0, highWaterMark)
-      if (!audioBuffer.length) {
-        console.log('数据发送完成')
-        clearInterval(t)
-        sendData('', FRAME.STATUS_LAST_FRAME)
-      }
-      sendData(e, FRAME.STATUS_CONTINUE_FRAME)
+    // 按照科大讯飞网站推荐的频率，每 40ms 发送 1280 字节的数据
+    t = setInterval(() => {
+      if (!audioBuffer.length) return
+      // 发送音频帧
+      let frame = audioBuffer.splice(0, highWaterMark)
+      sendData(frame, FRAME.STATUS_CONTINUE_FRAME)
+      // 计时
       remainingTime.innerText = Number.parseInt(remainingTime.innerText) + 40
     }, 40)
   })
 }
 
+// https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Audio_API
 // 构建音频处理流水线
 function buildJsHandleAudio(medisStream, cb) {
   const context = new AudioContext()
+  // 可以通过 js 直接处理音频的节点
+  // 这个接口已经不推荐使用，新的标准是 audio worker，但是还没有浏览器实现这个功能
   const recorder = context.createScriptProcessor(0, 1, 1)
+  // 创建一个 MediaStreamAudioSourceNode 接口来关联可能来自本地计算机麦克风或其他来源的音频流 MediaStream
   const ms = context.createMediaStreamSource(medisStream)
+  // 每当新的音频数据被放入输入缓冲区，就会产生一个AudioProcessingEvent事件，触发onaudioprocess回调
   recorder.onaudioprocess = e => cb(e.inputBuffer.getChannelData(0))
   ms.connect(recorder)
+  // destination 表示当前 audio context 中所有节点的最终节点，一般表示音频渲染设备
+  // 必须添加下面最终节点才会触发 onaudioprocess 事件
   recorder.connect(context.destination)
   return () => {
-    // ms.disconnect(recorder)
-    // recorder.disconnect(context.destination)
+    ms.disconnect(recorder)
+    recorder.disconnect(context.destination)
     closeMedia(medisStream)
   }
 }
@@ -107,6 +123,7 @@ function ArrayBufferToBase64(buffer) {
   for (var i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i])
   }
+  // 创建一个 base-64 编码的字符串
   return window.btoa(binary)
 }
 
@@ -182,6 +199,7 @@ function xunfei60(closeCallback) {
     // 建连错误
     ws.on('error', (err) => {
       console.log("websocket connect err: " + err)
+      closeCallback()
       reject(err)
     })
 
