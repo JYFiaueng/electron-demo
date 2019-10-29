@@ -1,8 +1,6 @@
-const startAudio = document.getElementById('startAudio')
-const stopAudio = document.getElementById('stopAudio')
-
-const startSAudio = document.getElementById('startSAudio')
-const stopSAudio = document.getElementById('stopSAudio')
+const CryptoJS = require('crypto-js')
+const WebSocket = require('ws')
+const {EventEmitter} = require('events')
 
 // 数据帧定义
 const FRAME = {
@@ -12,35 +10,56 @@ const FRAME = {
 }
 const highWaterMark = 1280
 
-startAudio.addEventListener('click', async () => {
-  const medisStream = await openAudio()
-  const sendData = await xunfei60()
+const sleep = async t => new Promise(resolve => setTimeout(() => resolve(), t))
 
-  const audioBuffer = []
-  const closeAudio = buildJsHandleAudio(medisStream, (pcmData) => {
-    const data = to16BitPCM(to16kHz(pcmData))
-    var _buffer60;
-    (_buffer60 = audioBuffer).push.apply(_buffer60, _toConsumableArray(data))
-  })
+window.addEventListener('DOMContentLoaded', DOMContentLoadedFn)
 
-  // 发送开始帧
-  sendData(audioBuffer.splice(0, highWaterMark), FRAME.STATUS_FIRST_FRAME)
-  // 按照推荐的频率，每 40ms 发送 1280 字节的数据
-  const t = setInterval(() => {
-    let e = audioBuffer.splice(0, highWaterMark)
-    if (!audioBuffer.length) {
-      console.log('数据发送完成')
+async function DOMContentLoadedFn() {
+  const startAudio = document.getElementById('startAudio')
+  const stopAudio = document.getElementById('stopAudio')
+  const remainingTime = document.getElementById('remainingTime')
+
+  startAudio.addEventListener('click', async () => {
+    startAudio.setAttribute('disabled', true)
+    remainingTime.innerText = 0
+    result_output.innerText = ''
+
+    const medisStream = await openAudio()
+    const sendData = await xunfei60(() => {
+      startAudio.removeAttribute('disabled')
+    })
+    const audioBuffer = []
+    const closeAudio = buildJsHandleAudio(medisStream, (pcmData) => {
+      const data = to16BitPCM(to16kHz(pcmData))
+      audioBuffer.push(..._toConsumableArray(data))
+    })
+
+    function stopEventFn (){
       clearInterval(t)
       sendData('', FRAME.STATUS_LAST_FRAME)
+      closeAudio()
+      stopAudio.removeEventListener('click', stopEventFn)
     }
-    sendData(e, FRAME.STATUS_CONTINUE_FRAME)
-  }, 40)
-  stopAudio.addEventListener('click', () => {
-    clearInterval(t)
-    sendData('', FRAME.STATUS_LAST_FRAME)
-    closeAudio()
+    stopAudio.addEventListener('click', stopEventFn)
+
+    // 防止发送数据太快，音频数据不足
+    await sleep(1000)
+
+    // 发送开始帧
+    sendData(audioBuffer.splice(0, highWaterMark), FRAME.STATUS_FIRST_FRAME)
+    // 按照推荐的频率，每 40ms 发送 1280 字节的数据
+    let t = setInterval(() => {
+      let e = audioBuffer.splice(0, highWaterMark)
+      if (!audioBuffer.length) {
+        console.log('数据发送完成')
+        clearInterval(t)
+        sendData('', FRAME.STATUS_LAST_FRAME)
+      }
+      sendData(e, FRAME.STATUS_CONTINUE_FRAME)
+      remainingTime.innerText = Number.parseInt(remainingTime.innerText) + 40
+    }, 40)
   })
-})
+}
 
 // 构建音频处理流水线
 function buildJsHandleAudio(medisStream, cb) {
@@ -51,8 +70,8 @@ function buildJsHandleAudio(medisStream, cb) {
   ms.connect(recorder)
   recorder.connect(context.destination)
   return () => {
-    ms.disconnect(recorder)
-    recorder.disconnect(context.destination)
+    // ms.disconnect(recorder)
+    // recorder.disconnect(context.destination)
     closeMedia(medisStream)
   }
 }
@@ -61,7 +80,7 @@ function buildJsHandleAudio(medisStream, cb) {
 async function openAudio() {
   return navigator.mediaDevices.getUserMedia({
     audio: true,
-    video: false
+    video: true
   })
 }
 
@@ -121,7 +140,7 @@ function to16BitPCM(input) {
 }
 
 // 建立科大讯飞 ws 连接
-function xunfei60() {
+function xunfei60(closeCallback) {
   return new Promise((resolve, reject) => {
     // 连接配置
     const config = {
@@ -157,6 +176,7 @@ function xunfei60() {
     // 资源释放
     ws.on('close', () => {
       console.log('connect close!')
+      closeCallback()
     })
 
     // 建连错误
@@ -173,7 +193,7 @@ function xunfei60() {
       if (outStatus !== undefined) {
         status = outStatus
       }
-      let frame = "";
+      let frame = ""
       let frameDataSection = {
         "status": status,
         "format": "audio/L16;rate=16000",
@@ -193,19 +213,21 @@ function xunfei60() {
               accent: "mandarin",
               dwa: "wpgs", // 可选参数，动态修正
               sample_rate: "16000",
-              vad_eos: 5000
+              vad_eos: 60000, // 端点检测的静默时间
+              ptt: 1, // 标点符号添加
+              nunum: 0
             },
             data: frameDataSection
           }
           // 第一个开始帧传输完成后，修改帧状态为中间态，然后不断发送PCM数据
           status = FRAME.STATUS_CONTINUE_FRAME
-          break;
+          break
         case FRAME.STATUS_CONTINUE_FRAME:
         case FRAME.STATUS_LAST_FRAME:
           frame = {
             data: frameDataSection
           }
-          break;
+          break
       }
       ws.send(JSON.stringify(frame))
     }
@@ -216,17 +238,28 @@ function xunfei60() {
 function haneldResult(data) {
   let result_output = document.getElementById('result_output')
 
-  var str = '';
-  var resultStr = '';
-  var ws = data.ws || [];
+  var str = ''
+  var resultStr = ''
+  var ws = data.ws || []
   for (var i = 0; i < ws.length; i++) {
-    str = str + ws[i].cw[0].w;
+    str = str + ws[i].cw[0].w
   }
   // 开启wpgs会有此字段
   // 取值为 "apd"时表示该片结果是追加到前面的最终结果；取值为"rpl" 时表示替换前面的部分结果，替换范围为rg字段
   if (!data.pgs || data.pgs === 'apd') {
-    resultText = result_output.innerText;
+    resultText = result_output.innerText
   }
   resultStr = resultText + str
   result_output.innerText = resultStr
+}
+
+function _toConsumableArray(arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+      arr2[i] = arr[i];
+    }
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
 }

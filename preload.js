@@ -8,11 +8,13 @@
 const fs = require('fs')
 const CryptoJS = require('crypto-js')
 const WebSocket = require('ws')
+const path = require('path')
 const {
   ipcRenderer
 } = require('electron')
 const {
-  dialog
+  dialog,
+  BrowserWindow
 } = require('electron').remote
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -61,6 +63,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const stopSAudio = document.getElementById('stopSAudio')
 
   // 语音实时转换
+
+/*
+
   navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true
@@ -101,12 +106,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 将 MediaStreamAudioSourceNode 的输出连接至 AudioNode 节点
         ms.connect(recorder)
         recorder.connect(context.destination)
-        console.log('-------context-------')
-        console.log(context)
-        console.log('-------recorder-------')
-        console.log(recorder)
-        console.log('-------ms-------')
-        console.log(ms)
         sendData = xunfei60()
         // 初始化录音数据
         setTimeout(() => {
@@ -179,6 +178,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     })
 
+*/
+
 })
 
 window.addEventListener('load', () => {
@@ -212,6 +213,21 @@ window.addEventListener('load', () => {
         { name: 'All Files', extensions: ['*'] }
       ]
     })
+  })
+
+  document.getElementById('openXunfeiAudio').addEventListener('click', e => {
+    let audioWin = new BrowserWindow({
+      width: 800,
+      height: 800,
+      webPreferences: {
+        preload: path.join(__dirname, 'audio.js')
+      }
+    })
+    audioWin.loadFile('audio.html')
+    audioWin.on('closed', () => {
+      audioWin = null
+    })
+    audioWin.webContents.openDevTools()
   })
 
 })
