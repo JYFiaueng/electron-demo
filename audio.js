@@ -129,6 +129,7 @@ function ArrayBufferToBase64(buffer) {
 
 function to16kHz(buffer) {
   var data = new Float32Array(buffer)
+  // 取到 44khz，采样压缩 16k
   var fitCount = Math.round(data.length * (16000 / 44100))
   var newData = new Float32Array(fitCount)
   var springFactor = (data.length - 1) / (fitCount - 1)
@@ -226,9 +227,9 @@ function xunfei60(closeCallback) {
               app_id: config.appid
             },
             business: {
-              language: "zh_cn",
+              language: "en_us",
               domain: "iat",
-              accent: "mandarin",
+              // accent: "mandarin",
               dwa: "wpgs", // 可选参数，动态修正
               sample_rate: "16000",
               vad_eos: 60000, // 端点检测的静默时间
