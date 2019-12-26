@@ -229,7 +229,7 @@ function xunfei60(closeCallback) {
               app_id: config.appid
             },
             business: {
-              language: "en_us",
+              language: "cn",
               domain: "iat",
               // accent: "mandarin",
               dwa: "wpgs", // 可选参数，动态修正
