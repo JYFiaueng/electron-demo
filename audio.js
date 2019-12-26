@@ -9,7 +9,7 @@ const FRAME = {
 }
 const highWaterMark = 1280
 
-const sleep = async t => new Promise(resolve => setTimeout(() => resolve(), t))
+const sleep = async t => new Promise(resolve => setTimeout(resolve, t))
 
 window.addEventListener('DOMContentLoaded', DOMContentLoadedFn)
 
@@ -22,6 +22,8 @@ async function DOMContentLoadedFn() {
     startAudio.setAttribute('disabled', true)
     remainingTime.innerText = 0
     result_output.innerText = ''
+
+    // 计时器
     let t = 0
 
     // 开启设备音频权限并收集处理音频数据
