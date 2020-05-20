@@ -63,9 +63,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const stopSAudio = document.getElementById('stopSAudio')
 
   // 语音实时转换
-
-/*
-
   navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true
@@ -178,8 +175,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     })
 
-*/
-
 })
 
 window.addEventListener('load', () => {
@@ -238,15 +233,17 @@ function xunfei(startMsg) {
     // 请求地址
     hostUrl: "wss://rtasr.xfyun.cn/v1/ws",
     //在控制台-我的应用-实时语音转写获取
-    appid: "5dad1c13",
+    appid: "5bbc104d",
     //在控制台-我的应用-实时语音转写获取
-    apiKey: "b23add4993b85f9bc8012863f04d0600"
+    apiKey: "39446547eb1c06a27ad96e2b34d94659"
   }
 
   // 获取当前时间戳
   let ts = parseInt(new Date().getTime() / 1000)
 
   let wssUrl = config.hostUrl + "?appid=" + config.appid + "&ts=" + ts + "&signa=" + getSigna(ts)
+  // wssUrl = "wss://rtasr.xfyun.cn/v1/ws?appid=5bbc104d&ts=1589972277&signa=hQinY1lcT3PeE8bVdHK851OyGeA%3D"
+  
   let ws = new WebSocket(wssUrl)
 
   // 连接建立完毕，读取数据进行识别
